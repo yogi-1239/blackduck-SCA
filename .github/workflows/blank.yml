@@ -1,0 +1,100 @@
+name: testSecurityScanBDSAST
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  testSecurityScanBDSAST:
+    runs-on: internal-small
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: getScriptUtils
+        uses: AI/gha-helper@v1
+        id: scriptUtils
+        with:
+          function: scriptUtils
+          target-file: script_utils.sh
+          target-folder: "tmp/artifacts"
+
+      - name: sanitizeBranchName
+        id: sanitizeBranchName
+        run: |
+          branchName="${{ github.head_ref || github.ref_name }}"
+          echo "BRANCH_NAME=${branchName//\//-}" >> $GITHUB_ENV
+
+      - name: Debug Script Utils Path
+        run: ls -lah tmp/artifacts
+
+      - name: Install Synopsys Detect CLI
+        run: |
+          curl -s -L https://detect.synopsys.com/detect.sh -o detect.sh
+          chmod +x detect.sh
+
+      - name: Run Black Duck SAST (Signature Scan)
+        id: blackduck-sast
+        env:
+          BLACKDUCK_URL: ${{ secrets.BLACKDUCK_URL }}
+          BLACKDUCK_API_TOKEN: ${{ secrets.BLACKDUCK_API_TOKEN }}
+        run: |
+          ./detect.sh \
+            --blackduck.url="$BLACKDUCK_URL" \
+            --blackduck.api.token="$BLACKDUCK_API_TOKEN" \
+            --detect.project.name="SHC - ai-platform" \
+            --detect.project.version.name="${{ github.sha }}" \
+            --detect.source.path="." \
+            --detect.tools=SIGNATURE_SCAN \
+            --detect.blackduck.signature.scanner.snippet.matching=SNIPPET_MATCHING \
+            --detect.output.path="tmp/artifacts" \
+            --detect.policy.check.fail.on.severities=CRITICAL,HIGH \
+            --detect.report.timeout=300
+
+      - name: Fetch Google JSON key for Cumulus Upload
+        id: fetch-google-jsonKey
+        env:
+          GOOGLE_CLOUD_JSON_KEY: ${{ secrets.PIPER_CUMULUS_GOOGLE_CLOUD_JSON_KEY }}
+        run: |
+          file="${{ github.workspace }}/tmp/.google/key.json"
+          mkdir -p "$(dirname ${file})"
+          echo "${GOOGLE_CLOUD_JSON_KEY}" > "${file}"
+          echo "KEY_FILE=${file}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Cumulus Upload Args
+        id: cumulus-args
+        run: |
+          filters=**/blackduck-riskreport.pdf
+          args=(--filePattern "${filters}")
+          args+=(--stepResultType blackduck-sast)
+          args+=(--jsonKeyFilePath ${{ steps.fetch-google-jsonKey.outputs.KEY_FILE }})
+          args+=(--pipelineId "93f23bd4-0476-4a79-ac32-db073e98c755")
+          args+=(--gitHeadCommitId "${{ github.sha }}")
+          echo "ARGS=${args[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: sapCumulusUpload (Black Duck SAST)
+        if: success() 
+        uses: SAP/project-piper-action@main
+        with:
+          step-name: sapCumulusUpload
+          flags: >
+            --filePattern tmp/artifacts/blackduck-notices-report.txt
+            --stepResultType blackduck-sast
+            --jsonKeyFilePath tmp/.google/key.json
+            --pipelineId 93f23bd4-0476-4a79-ac32-db073e98c755
+            --gitHeadCommitId ${{ github.sha }}
+        env:
+          PIPER_ACTION_GITHUB_ENTERPRISE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PIPER_ACTION_PIPER_VERSION: "latest"
+          PIPER_ACTION_SAP_PIPER_VERSION: "latest"
+          PIPER_ACTION_SAP_PIPER_OWNER: project-piper
+          PIPER_ACTION_SAP_PIPER_REPOSITORY: sap-piper
+
+      - name: Cleanup
+        run: |
+          rm -rf tmp/.google tmp/artifacts detect.sh
+          echo "Cleaned up temporary files."
