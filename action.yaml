@@ -1,0 +1,655 @@
+name: ghaSecScanBDBA
+description:
+  This action scans a docker image with Protecode and uploads the results to Cumulus.
+
+
+inputs:
+  group:
+    required: false
+    description: The BDBA group ID (number not string name)
+    default: "2997" # group id of the group "AI Platform"
+  image:
+    required: true
+    description:
+      Fully qualified docker image (format ${registry}/${image_path}:${tag}).
+  registry-secret:
+    required: true
+    description:
+      Secret that holds the docker-config.jsons for the registry.
+  image-tag:
+    required: true
+    description:
+      Tag of the resulting image used to construct "${image_path}:${tag}"
+  debug:
+    required: false
+    default: 'false'
+    description: Enables debug output if set
+  upload-to-cumulus:
+    required: false
+    default: 'true'
+    description: |
+      Flag to control whether the scan results should be uploaded to Cumulus.
+      If set to false, the scan results will not be uploaded to Cumulus.
+  ignore-vulnerabilities-file:
+      required: false
+      default: ""
+      description: |
+        Specify the file that holds the list of vulnerabilities to ignore.
+        The file must be in the format:
+          ```yaml
+          CVE-2021-1234:
+            ignoreUntil: YYYY-MM-DD
+          CVE-2021-5678:
+            ignoreUntil: YYYY-MM-DD
+          ...
+          ```
+  replace-scanned-image:
+    required: false
+    default: ""
+    description: |
+      Specify the product id of the image that should be replaced by the newly
+      scanned image. This must only be used for transient scans like PR scans.
+      For piper documentation see:
+      https://github.wdf.sap.corp/pages/ContinuousDelivery/piper-doc/steps/protecodeExecuteScan/#replaceproductid
+  branch-name:
+    required: false
+    default: ""
+    description: |
+      Specify the branch name of the pull request to be used as the pull request name.
+      This value can't contain spaces or slashes and will be used to prefix the image tar filename.
+      For piper documentation see:
+      https://github.wdf.sap.corp/pages/ContinuousDelivery/piper-doc/steps/protecodeExecuteScan/#pullrequestname
+  server-url:
+    required: false
+    default: "https://bdba.tools.sap"
+    description: The URL to the BDBA backend
+  cumulus-pipeline-id:
+    required: true
+    # executions-repo id: 70b48cb6-4c20-407a-adea-47587480d0b2
+    # staging id for testing executions repo: 31793a3a-b57f-4a10-b5f7-75b103ed727e
+    # staging pipeline for testing cumulus+sirius integration read  (https://staging.hyperspace.tools.sap/pipelines/2022/extensible/config/cumulusUpload).
+    # Only use this for uploading whitesource scan results to staging cumulus pipeline (https://staging.hyperspace.tools.sap/pipelines)
+    # and view results in test sirius (https://sirius-test.tools.sap.corp)
+    description: |
+      Provide the repository-specific cumulus pipeline id. This can be obtained from the Hyperspace portal from the following url
+      ```bash
+      repo_name=examples
+      echo "https://portal.hyperspace.tools.sap/projects/ai-platform/components/${repo_name}/overview?modal=%2Fprojects%2Fai-platform%2Fcomponents%2F${repo_name}%2Fpipeline-ui%2Fcumulus-info&modalParams=%7B%22title%22%3A%22Cumulus%20Info%22%2C%22height%22%3A%22565px%22%2C%22width%22%3A%22420px%22%7D"
+      ```
+  cumulus-pipeline-run-id:
+    required: false
+    default: ${{ github.sha }}
+    description: |
+      Provide a unique Run ID acting as the object bucket for Cumulus uploads,
+      which is eventually consolidated in Sirius. By default it is the commit SHA of the current run. It cannot contain any slashes.
+  release:
+    required: false
+    default: 'false'
+    description: |
+      This flag must be set for releases. It controls the github action runner
+      of the piper build. For releases the build must be executed in the SAP official
+      SUGAR runners (https://pages.github.tools.sap/github/features-and-usecases/features/actions/start/)
+  script-utils-path:
+    required: false
+    default: "script_utils.sh"
+    description: 'Path to the script utilities file in script-utils-folder.'
+  script-utils-folder:
+    required: false
+    default: "tmp/artifacts"
+    description: 'Path to the script utilities folder.'
+  github-token:
+    required: true
+    description: |
+      GitHub token to be passed as PIPER_ACTION_GITHUB_ENTERPRISE_TOKEN
+      when using piper build, which is the default build engine. Thus, this
+      input is always required.
+  piper-protecode-token:
+    required: true
+    description: User token for protecode scan.
+  piper-product-name:
+    required: true
+    default: "SHC - ai-platform"
+    description: |
+      Provide the product id of your application
+  piper-cumulus-google-cloud-json-key:
+    required: true
+    description: |
+      Google Cloud Storage JSON key. Used to upload the scan results to Cumulus
+  triaged-vulnerabilities-file:
+      required: false
+      default: ""
+      description: |
+        Specify the file that holds the list of vulnerabilities to ignore.
+        Note avoid single quotes in the description. As this causes runs to fail.
+        The file must be in the format:
+          ```yaml
+          # Reasons: OT = Other, FD = Feature Disabled, VP = Vendor Patched
+          - component: bash
+            versions:
+            - 4.4-150400.27.3.2
+            - 7.0-150400.27.3.2
+            triaged_vulnerabilities:
+            - cves:
+              - CVE-2017-5932
+              reason: OT
+              description: >
+                Suse is not considering it a problem and it was not fixed according to https://www.suse.com/security/cve/CVE-2017-5932.html.
+            - cves:
+              - CVE-2019-18276
+              reason: OT
+              description: >
+                Suse is not considering it a problem and it was not fixed according to https://www.suse.com/security/cve/CVE-2019-18276.html.
+          ...
+          ```
+  version-overrides-file:
+      required: false
+      default: ""
+      description: |
+        Specify the file that holds the list of vulnerabilities to ignore.
+        The file must be in the format:
+          ```yaml
+          - component: bash
+            version: 4.4-150400.27.3.2
+            sha1s:
+            # usr/bin/bash
+            - 2ccfac30e3db5aeef665a3f54823b46a60e8a6f3
+          ...
+          ```
+  reuse-protecode-triage:
+      required: false
+      default: "true"
+      description: |
+        Setting `reuseProtecodeTriage` to true or non-null values will execute Protecode scan, auto-triage and scan again.
+        Add the extended config for protecodeExecuteScan in .pipeline/config.yml
+
+  verify-only:
+    required: false
+    default: "true"
+    description: |
+      Whether the step shall only apply verification checks or whether it does a full scan and check cycle.
+      Default is true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v3
+      with:
+        name: script-utils-file
+        path: ${{ inputs.script-utils-folder }}
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: set registry secret
+      id: set-registry-secret
+      env:
+        DOCKER_CONFIG_PATH: "${{ github.workspace }}/tmp/.docker"
+        TARGET_SECRET: ${{ inputs.registry-secret }}
+        DEBUG: ${{ inputs.debug }}
+      shell: bash
+      run: |
+        source "${{ inputs.script-utils-folder }}/${{ inputs.script-utils-path }}"
+        secret_dir="${{ env.DOCKER_CONFIG_PATH }}/target_secret"
+        secret_path="${secret_dir}/config.json"
+
+        # Ensure the directory exists
+        mkdir -p "${secret_dir}"
+
+        debug "target secret path: ${secret_path}"
+        echo "$TARGET_SECRET" > "${secret_path}"
+
+        echo "TARGET_SECRET_PATH=${secret_path}" >> "$GITHUB_OUTPUT"
+
+    - name: ignore vulnerabilities
+      id: ignore-vulnerabilities
+      shell: bash
+      env:
+        DEBUG: ${{ inputs.debug }}
+      run: |
+        source "${{ inputs.script-utils-folder }}/${{ inputs.script-utils-path }}"
+
+        main() {
+
+          ignore_file="${{ inputs.ignore-vulnerabilities-file }}"
+
+          if [[ -z "${ignore_file}" ]]; then
+            debug "no ignore vulnerabilities file provided -- skipping"
+            return
+          fi
+
+          err="Error: Cannot get keys of !!null, keys only works for maps and arrays"
+          if [[ "$(yq 'keys[]' "${ignore_file}" 2>&1 || true)" == "${err}" ]]; then
+            debug "ignore vulnerabilities file ${ignore_file} is empty -- skipping"
+            return
+          fi
+
+          IGNORE_LIST=()
+          vulnerabilities=($(yq '(. // {}) | keys[]' "${ignore_file}"))
+          debug "listed vulnerabilities=${vulnerabilities[*]}"
+          for v in "${vulnerabilities[@]}"; do
+            ignore_until=$(yq ".\"${v}\".ignoreUntil" "${ignore_file}")
+            if [[ -z "${ignore_until}" ]]; then
+              warning "ignoreUntil not set for vulnerability ${v} in ${ignore_file} -- ignoring"
+              continue
+            fi
+            until=$(date -d ${ignore_until} +%s)
+            if (( until < $(date +%s) )); then
+              warning "ignoreUntil date ${ignore_until} for vulnerability ${v} in ${ignore_file} is in the past -- ignoring"
+              continue
+            fi
+
+            IGNORE_LIST+=("${v}")
+          done
+
+          echo "IGNORE_LIST=${IGNORE_LIST[@]}" >> "$GITHUB_OUTPUT"
+        }
+
+        main "${@}"
+
+    - name: piper arguments
+      id: protecode-args
+      env:
+        PIPER_PROTOCODE_TOKEN: ${{ inputs.piper-protecode-token }}
+        DEBUG: ${{ inputs.debug }}
+      shell: bash
+      run: |
+        source "${{ inputs.script-utils-folder }}/${{ inputs.script-utils-path }}"
+        ignore_vulas=( ${{ steps.ignore-vulnerabilities.outputs.IGNORE_LIST }} )
+
+        ## piper specific arguments
+        args=(--dockerConfigJSON "${{ steps.set-registry-secret.outputs.TARGET_SECRET_PATH }}")
+        args+=(--version ${{inputs.image-tag}})
+        if [[ "${{inputs.replace-scanned-image}}" != "" ]]; then
+          args+=(--replaceProductId ${{inputs.replace-scanned-image}})
+        fi
+        if [[ "${{inputs.branch-name}}" != "" ]]; then
+          args+=(--pullRequestName "${{inputs.branch-name}}")
+        fi
+        args+=(--serverUrl ${{inputs.server-url}})
+        args+=(--group ${{inputs.group}})
+        args+=(--failOnSevereVulnerabilities false)
+        args+=(--scanImage ${{ inputs.image }})
+        args+=(--userAPIKey "${PIPER_PROTOCODE_TOKEN}")
+        args+=(--versioningModel semantic)
+        if [[ "${{inputs.verify-only}}" == "true" ]]; then
+          args+=(--verifyOnly true)
+        fi
+        args+=(--reportFileName protecode_report.pdf)
+
+        if (( ${#ignore_vulas[@]} )); then
+          ignore=$(printf ",%s" "${ignore_vulas[@]}")
+          args+=(--excludeCVEs "${ignore:1}")
+        fi
+
+        if [[ "${{inputs.debug}}" == "true" ]]; then
+          args+=(--verbose)
+        fi
+        debug "piper arguments: ${args[*]}"
+
+        printf "ARGS=%s" "${args[*]}" >> $GITHUB_OUTPUT
+        echo "PIPER ARGS=${args[*]}"
+
+    - name: protecodeExecuteScan
+      id: protecode-scan
+      continue-on-error: true
+      uses: SAP/project-piper-action@main
+      with:
+        step-name: protecodeExecuteScan
+        flags: ${{ steps.protecode-args.outputs.ARGS }}
+      env:
+        PIPER_ACTION_GITHUB_ENTERPRISE_TOKEN: ${{ inputs.github-token }}
+        PIPER_productName: ${{ inputs.piper-product-name }}
+        PIPER_ACTION_PIPER_VERSION: "latest"
+        PIPER_ACTION_SAP_PIPER_VERSION: "latest"
+        PIPER_ACTION_SAP_PIPER_OWNER: project-piper
+        PIPER_ACTION_SAP_PIPER_REPOSITORY: sap-piper
+
+    - name: Check-Vulnerabilities
+      id: check-vulnerabilities
+      shell: bash
+      env:
+        DEBUG: ${{ inputs.debug }}
+      run: |
+        source "${{ inputs.script-utils-folder }}/${{ inputs.script-utils-path }}"
+        debug "current workspace files"
+        debug "$(ls -lrta ${{ github.workspace }})"
+        if [ ! -f protecodeExecuteScan.json ]; then
+          error "Protecode result file: protecodeExecuteScan.json not found."
+        fi
+        SCAN_RESULT=$(cat protecodeExecuteScan.json)
+        COUNT=$(jq -r '.count' protecodeExecuteScan.json)
+        if [ "$COUNT" -gt 0 ]; then
+          info "Vulnerabilities found! Count: $COUNT"
+          echo "vulnerability_status=fail" >> "$GITHUB_OUTPUT"
+        else
+          info "No vulnerabilities found!"
+          echo "vulnerability_status=pass" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: extract protecode product id
+      id: extract-product-id
+      if: steps.check-vulnerabilities.outputs.vulnerability_status == 'fail'
+      shell: bash
+      run: |
+        SEARCH_DIR=${{ github.workspace }}
+        product_id=$(cat protecodeExecuteScan.json | jq -r .productID)
+        echo "product_id=$product_id" >> "$GITHUB_OUTPUT"
+
+    - name: Install python dependencies
+      if: steps.check-vulnerabilities.outputs.vulnerability_status == 'fail'
+      shell: bash
+      env:
+        DEBUG: ${{ inputs.debug }}
+      run: |
+        source "${{ inputs.script-utils-folder }}/${{ inputs.script-utils-path }}"
+        _exec python3 -m pip install --upgrade pip
+        _exec pip install PyYAML
+
+    - name: Process Version Overrides and Call API
+      env:
+        PIPER_PROTOCODE_TOKEN: ${{ inputs.piper-protecode-token }}
+        PRODUCT_ID: ${{ steps.extract-product-id.outputs.product_id }}
+        DEBUG: ${{ inputs.debug }}
+      if: inputs.version-overrides-file != '' && steps.check-vulnerabilities.outputs.vulnerability_status == 'fail'
+      shell: bash
+      run: |
+        source "${{ inputs.script-utils-folder }}/${{ inputs.script-utils-path }}"
+        function main() {
+          VERSION_OVERRIDES_FILE="${{ inputs.version-overrides-file }}"
+          SERVER_URL="${{ inputs.server-url }}"
+
+          check_version_file "$VERSION_OVERRIDES_FILE"
+          generate_json_payload "$VERSION_OVERRIDES_FILE"
+          validate_json_payload "$OVERRIDES_JSON"
+          debug "Generated JSON Payload:"
+          debug "$OVERRIDES_JSON"
+
+          send_request "$SERVER_URL/api/versionoverride/" "$OVERRIDES_JSON"
+        }
+
+        function check_version_file() {
+          local file="$1"
+          if [[ ! -f "$file" ]]; then
+            debug "Version overrides file not found: $file"
+            exit 1
+          fi
+          info "Processing version overrides file: $file"
+        }
+
+        function generate_json_payload() {
+          local file="$1"
+          OVERRIDES_JSON=$(python3 -c """
+        import yaml, json
+        with open('$file', 'r') as f:
+            overrides = yaml.safe_load(f) or []
+            payload = []
+            for override in overrides:
+                payload.append({
+                    'component': override.get('component', ''),
+                    'version': override.get('version', ''),
+                    'scope': 1,
+                    'app_scope': '$PRODUCT_ID',
+                    'objects': override.get('sha1s', [])
+                })
+            json_output = json.dumps(payload, indent=2)
+            if not json_output.strip():
+                raise ValueError('Generated JSON is empty')
+            print(json_output)
+        """)
+        }
+
+        function validate_json_payload() {
+          local json="$1"
+          if [[ -z "$json" ]]; then
+            debug "Error: OVERRIDES_JSON is empty"
+            exit 1
+          fi
+        }
+
+        function send_request() {
+          local url="$1"
+          local data="$2"
+          local method="PUT"
+
+          debug "Sending API request to: $url"
+          body=$(echo "$data" | jq .)
+
+          response=$(curl -s -w "%{http_code}" -o response_body.json -X "$method" "$url" \
+            -H "Content-Type: application/octet-stream" \
+            -H "Authorization: Bearer $PIPER_PROTOCODE_TOKEN" \
+            -H "Accept: application/json" \
+            -d "$body")
+
+          status_code=$(cat response_body.json | jq -r '.status')
+
+          if [[ "$status_code" -eq 200 || "$status_code" -eq 201 ]]; then
+            debug "API call successful: Status $status_code"
+            return 0
+          else
+            debug "API call failed with status $status_code"
+            cat response_body.json
+            return 1
+          fi
+        }
+
+        main "${@}"
+
+    - name: Process Triaged Vulnerabilities
+      env:
+        PIPER_PROTOCODE_TOKEN: ${{ inputs.piper-protecode-token }}
+        PRODUCT_ID: ${{ steps.extract-product-id.outputs.product_id }}
+        DEBUG: ${{ inputs.debug }}
+      if: inputs.triaged-vulnerabilities-file != '' && steps.check-vulnerabilities.outputs.vulnerability_status == 'fail'
+      shell: bash
+      run: |
+        source "${{ inputs.script-utils-folder }}/${{ inputs.script-utils-path }}"
+        function main() {
+          TRIAGED_VULNERABILITIES_FILE="${{ inputs.triaged-vulnerabilities-file }}"
+          SERVER_URL="${{ inputs.server-url }}"
+
+          check_triaged_file "$TRIAGED_VULNERABILITIES_FILE"
+          generate_triaged_json "$TRIAGED_VULNERABILITIES_FILE"
+          validate_json_payload "$TRIAGED_JSON"
+          debug "Generated JSON Payload:"
+          debug "$TRIAGED_JSON"
+
+          process_each_payload "$SERVER_URL/api/triage/vulnerability/" "$TRIAGED_JSON"
+        }
+
+        function check_triaged_file() {
+          local file="$1"
+          if [[ ! -f "$file" ]]; then
+            debug "Triaged vulnerabilities file not found: $file"
+            exit 1
+          fi
+          info "Processing triaged vulnerabilities file: $file"
+        }
+
+        function generate_triaged_json() {
+          local file="$1"
+          TRIAGED_JSON=$(python3 -c """
+        import yaml, json
+        with open('$file', 'r') as f:
+            triages = yaml.safe_load(f) or []
+            payloads = []
+            for triage in triages:
+                for version in triage.get('versions', []):
+                    for vuln in triage.get('triaged_vulnerabilities', []):
+                        payloads.append({
+                            'vulns': vuln.get('cves', []),
+                            'component': triage.get('component', ''),
+                            'version': version,
+                            'scope': 'R',
+                            'reason': vuln.get('reason', ''),
+                            'description': vuln.get('description', ''),
+                            'product_id': '$PRODUCT_ID'
+                        })
+            json_output = json.dumps(payloads, indent=2)
+            if not json_output.strip():
+                raise ValueError('Generated JSON is empty')
+            print(json_output)
+        """)
+        }
+
+        function validate_json_payload() {
+          local json="$1"
+          if [[ -z "$json" ]]; then
+            debug "Error: TRIAGED_JSON is empty"
+            exit 1
+          fi
+        }
+
+        function send_request() {
+          local url="$1"
+          local data="$2"
+          local method="PUT"
+
+          debug "Sending API request to: $url"
+          if [[ -z "$data" ]]; then
+            debug "Error: Empty data payload"
+            exit 1
+          fi
+
+          body=$(echo "$data" | jq . || echo "{}")
+
+          _exec_output "response" \
+            curl -s -w "'%{http_code}'" -o response_body.json -X "$method" "$url" \
+            -H "'Content-Type: application/octet-stream'" \
+            -H "'Authorization: Bearer $PIPER_PROTOCODE_TOKEN'" \
+            -H "'Accept: application/json'" \
+            -d "'$body'"
+
+          debug "Response: $response"
+
+          http_status=$(echo "$response" | tail -c 4)
+          api_status=$(jq -r '.meta.code // empty' response_body.json)
+          final_status="${api_status:-$http_status}"
+
+          if [[ "$final_status" -eq 200 || "$final_status" -eq 201 ]]; then
+            debug "API call successful: Status $final_status"
+            return 0
+          else
+            debug "API call failed with status $final_status"
+            cat response_body.json
+            return 1
+          fi
+        }
+
+        function process_each_payload() {
+          local url="$1"
+          local json="$2"
+
+          echo "$json" | jq -c '.[]' | while read -r payload; do
+            send_request "$url" "$payload"
+            sleep 5 # Avoid rate limiting
+          done
+        }
+
+        main "${@}"
+
+    - name: re-run piper arguments
+      id: protecode-args-retry
+      if: inputs.reuse-protecode-triage == 'true' && steps.check-vulnerabilities.outputs.vulnerability_status == 'fail'
+      env:
+        PIPER_PROTOCODE_TOKEN: ${{ inputs.piper-protecode-token }}
+        PRODUCT_ID: ${{ steps.extract-product-id.outputs.product_id }}
+        DEBUG: ${{ inputs.debug }}
+      shell: bash
+      run: |
+        source "${{ inputs.script-utils-folder }}/${{ inputs.script-utils-path }}"
+        ignore_vulas=( ${{ steps.ignore-vulnerabilities.outputs.IGNORE_LIST }} )
+        args=(--dockerConfigJSON "${{ steps.set-registry-secret.outputs.TARGET_SECRET_PATH }}")
+        args+=(--version ${{inputs.image-tag}})
+        if [[ "${{inputs.branch-name}}" != "" ]]; then
+          args+=(--pullRequestName "${{inputs.branch-name}}")
+        fi
+        args+=(--serverUrl ${{inputs.server-url}})
+        args+=(--group ${{inputs.group}})
+        args+=(--failOnSevereVulnerabilities true)
+        args+=(--scanImage ${{ inputs.image }})
+        args+=(--userAPIKey "${{ inputs.piper-protecode-token }}")
+        args+=(--replaceProductId $PRODUCT_ID)
+        args+=(--versioningModel semantic)
+        args+=(--reportFileName protecode_report.pdf)
+        args+=(--verbose true)
+        if (( ${#ignore_vulas[@]} )); then
+          ignore=$(printf ",%s" "${ignore_vulas[@]}")
+          args+=(--excludeCVEs "${ignore:1}")
+        fi
+        if [[ "${{inputs.debug}}" == "true" ]]; then
+          args+=(--verbose)
+        fi
+        debug "piper arguments: ${args[*]}"
+        echo "ARGS=${args[*]}" >> "$GITHUB_OUTPUT"
+
+    - name: re-run protecodeExecuteScan
+      id: protecode-scan-retry
+      if: inputs.reuse-protecode-triage == 'true' && steps.check-vulnerabilities.outputs.vulnerability_status == 'fail'
+      uses: SAP/project-piper-action@main
+      with:
+        step-name: protecodeExecuteScan
+        flags: ${{ steps.protecode-args-retry.outputs.ARGS }}
+      env:
+        PIPER_ACTION_GITHUB_ENTERPRISE_TOKEN: ${{ inputs.github-token }}
+        PIPER_productName: ${{ inputs.piper-product-name }}
+        PIPER_ACTION_PIPER_VERSION: "latest"
+        PIPER_ACTION_SAP_PIPER_VERSION: "latest"
+        PIPER_ACTION_SAP_PIPER_OWNER: project-piper
+        PIPER_ACTION_SAP_PIPER_REPOSITORY: sap-piper
+
+    # fetch Google Cloud JSON Key for Cumulus Upload
+    - name: fetch google jsonKey file
+      id: fetch-google-jsonKey
+      env:
+        GOOGLE_CLOUD_JSON_KEY: 
+          "${{ inputs.piper-cumulus-google-cloud-json-key }}"
+      if: ${{ inputs.upload-to-cumulus == 'true' }}
+      shell: bash
+      run: |
+        file="${{ github.workspace }}/tmp/.google/key.json"
+        mkdir -p "$(dirname ${file})"
+        echo "${GOOGLE_CLOUD_JSON_KEY}" > "${file}"
+        echo "KEY_FILE=${file}" >> "$GITHUB_OUTPUT"
+
+    - name: piper arguments cumulus
+      id: cumulus-args
+      shell: bash
+      run: |
+        filters=**/protecode_report.pdf
+        args=(--filePattern "${filters}")
+        args+=(--stepResultType protecode-security)
+        args+=(--jsonKeyFilePath ${{ steps.fetch-google-jsonKey.outputs.KEY_FILE }})
+        args+=(--pipelineId ${{inputs.cumulus-pipeline-id}})
+        args+=(--gitHeadCommitId ${{ inputs.cumulus-pipeline-run-id }})
+        if [[ "${{inputs.debug}}" == "true" ]]; then
+          args+=(--verbose)
+        fi
+        printf "ARGS=%s" "${args[*]}" >> $GITHUB_OUTPUT
+
+    - name: sapCumulusUpload (protecode)
+      if: ${{ inputs.upload-to-cumulus == 'true' }}
+      uses: SAP/project-piper-action@main
+      with:
+        step-name: sapCumulusUpload
+        flags: ${{ steps.cumulus-args.outputs.ARGS }}
+      env:
+        PIPER_ACTION_GITHUB_ENTERPRISE_TOKEN: ${{ inputs.github-token }}
+        PIPER_ACTION_PIPER_VERSION: "latest"
+        PIPER_ACTION_SAP_PIPER_VERSION: "latest"
+        PIPER_ACTION_SAP_PIPER_OWNER: project-piper
+        PIPER_ACTION_SAP_PIPER_REPOSITORY: sap-piper
+
+    - name: cleanup
+      env:
+        DOCKER_CONFIG_PATH: "${{ github.workspace }}/tmp/.docker"
+      shell: bash
+      run: |
+        source "${{ inputs.script-utils-folder }}/${{ inputs.script-utils-path }}"
+        rm -rf ${{ env.DOCKER_CONFIG_PATH }}
+        rm -f protecode_report.pdf
+        gcp_key="${{ steps.fetch-google-jsonKey.outputs.KEY_FILE }}"
+        if [[ -n "${gcp_key}" ]]; then
+          rm -rf "$(dirname ${gcp_key})"
+        fi
+        info "Secret files cleaned up"
