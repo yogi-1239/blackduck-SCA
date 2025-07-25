@@ -1,0 +1,261 @@
+- component: bash
+  version: 4.4-150400.27.3.2
+  sha1s:
+  # usr/bin/bash
+  - 2ccfac30e3db5aeef665a3f54823b46a60e8a6f3
+- component: bash
+  version: 7.0-150400.27.3.2
+  sha1s:
+  # lib64/libhistory.so.7.0
+  - 4a76974b408ace0d541785795f5a85f2817371ca
+- component: binutils
+  version: 2.43-150100.7.52.1
+  sha1s:
+  # usr/bin/readelf
+  - 2e81a435a411d31d9af93d5a7cdd683a2f635617
+  # usr/lib64/libbfd-2.43.1.20241209-150100.7.52.so
+  - 25e245a687ede469d183bd8d25a24b7ea8a89458
+  # usr/lib64/libctf-nobfd.so.0.0.0
+  - f8bcfc2a626eec8813c52d0abac57fb44a05cbf0
+  # usr/lib64/libctf.so.0.0.0
+  - ff2245866b2b2230e14774a7746a503a8f6c0b53
+- component: boost
+  version: 1.66.0-12.3.1
+  sha1s:
+  # usr/lib64/libboost_thread.so.1.66.0
+  - 4c9f78510a9a20bf1f37cca3f1941279ec6cc57d
+- component: cpio
+  version: 2.13-150400.3.6.1
+  sha1s:
+  # usr/bin/cpio
+  - 00c9363b703d842a36fc178023a7f513008c1878
+- component: curl
+  version: 8.6.0-150600.4.21.1
+  sha1s:
+  # usr/bin/curl
+  - 2db286cf765fb7d613ca716c8a6e22b931c02c86
+  # usr/lib64/libcurl.so.4.8.0
+  - a058f504fba683cefaaa75ece54c1ea1d282f714
+- component: elfutils
+  version: 0.185-150400.5.3.1
+  sha1s:
+  # usr/lib64/libelf-0.185.so
+  - 3368043cb2e1c162d5f132e184c79100d96fe0ca
+  # usr/lib64/libdw-0.185.so
+  - 9cb998a358b1de74426e823190f6064856a66594
+- component: expat
+  version: 2.4.4-150400.3.25.1
+  sha1s:
+  # usr/lib64/libexpat.so.1.8.4
+  - 7f335759b5a75a826e172082d660cbb239232ab8
+- component: file
+  version: 5.32-7.14.1
+  sha1s:
+  # usr/lib64/libmagic.so.1.0.0
+  - a828767524ebc39eeb74773f8623028fde814813
+  # etc/magic
+  - 0b91160c320d50ba1e2955ca2fd9207114be84d7
+  # usr/bin/file
+  - 254aa7ea8ef17db1d9c151147359a7fc19e49100
+- component: gawk
+  version: 4.2.1-150000.3.3.1
+  sha1s:
+  # usr/bin/gawk
+  - c7eca4ddcb452ae8800bfb25f28f4bffebce0869
+- component: gcc
+  version: 14.2.0+git10526-150000.1.6.1
+  sha1s:
+  # usr/lib64/libstdc++.so.6.0.33
+  - b47f400ca386127a99aeed63d94304bb1fa8d86e
+- component: gcc
+  version: 7.5.0+r278197-150000.4.41.1
+  sha1s:
+  # usr/bin/cpp-7
+  - f0860cb58f688ac41e6e986dd5005587d89ddc90
+  # usr/bin/g++-7
+  - aaec744639eb48d181c50969d3fb31f32d8c9114
+  # usr/bin/gcc-7
+  - 496fda1c4a1de4bc31ed34bab2e1587348fe7faa
+  # usr/lib64/gcc/x86_64-suse-linux/7/cc1
+  - 89890b87d3f1b936e33ce292c4e8b39ad77eeafc
+  # usr/lib64/gcc/x86_64-suse-linux/7/cc1plus
+  - 37da6f49c642f081218fb0eb787962912f8d1f0b
+  # usr/lib64/gcc/x86_64-suse-linux/7/libstdc++.a
+  - d5a9396a778f1c22570384ce4d9e11acfc5abaf4
+  # usr/lib64/gcc/x86_64-suse-linux/7/lto-wrapper
+  - cb4ec869da26a452c72d999b2c9770b6f05fc72b
+  # usr/lib64/gcc/x86_64-suse-linux/7/lto1
+  - 84d36adad4f97f88d274895631d1a77be41d3292
+- component: git
+  version: 2.35.3-150300.10.45.2
+  sha1s:
+  # usr/bin/git-shell
+  - db91139f82303a347bb76b6ac19b0b8be5b5d7ef
+  # usr/lib/git/git
+  - ab9486989913e92492a08b3aeb3f246d72212294
+  # usr/lib/git/git-http-backend
+  - 0b39e98bcf516a6236558725549a8060e28422cd
+  # usr/lib/git/git-http-fetch
+  - f0fa0867fe339037c76f0f5ee24d0fbb762f9aa8
+  # usr/lib/git/git-http-push
+  - d279c794f31436b00e1e8ec5d87df6870a3f8239
+  # usr/lib/git/git-imap-send
+  - 1d3fa5eed3141b3cd0db686bd13f89c6b76a4fbd
+  # usr/lib/git/git-remote-http
+  - cf1b13562c89a0424431e054c83169cc460aa284
+  # usr/lib/git/git-sh-i18n--envsubst
+  - fc97d32ccda1e7e24bce9af7127de2fa20ac7d47
+  # usr/lib/perl5/vendor_perl/5.26.1/Git.pm
+  - 1de59e41f06dbdb54df9a702640268baab88b293
+  # usr/lib/git/git-add--interactive
+  - 43fb4162bf6198383beee018b699565f2593e463
+- component: glib
+  version: 2.78.6-150600.4.8.1
+  sha1s:
+  # usr/lib64/libglib-2.0.so.0.7800.6
+  - 2b7ef8f26a515bed465d6c36e6dea4d375f78956
+- component: glib
+  version: pkg-config-0.29.2-1.436
+  sha1s:
+  # usr/bin/pkg-config
+  - 0d88394a5faba73d2cd4ea8fed857eda75efc1f0
+- component: glibc
+  version: 2.38-150600.14.23.1
+  sha1s:
+  # lib64/libc.so.6
+  - 9179ece8b5b2f313cbefae2f4dcc32fa97b49b3c
+  # sbin/ldconfig
+  - e019f5498bd80d17279b4c5619e798fcd5fdfa4b
+  # lib64/libBrokenLocale.so.1
+  - e7cdbf203c586fce1986162df2fea07e66aed1d6
+- component: gmp
+  version: 6.1.2-4.9.1
+  sha1s:
+  # usr/lib64/libgmp.so.10.3.2
+  - 51d8316ff4ab8d99814e7757d86aa566b5f0d687
+- component: kerberos
+  version: 1.20.1-150600.11.8.1
+  sha1s:
+  # usr/lib64/libkrb5.so.3.3
+  - 9249f78deab6a54845da908263ece0dc1fb0a682
+  # usr/lib64/libgssapi_krb5.so.2.2
+  - 88e7b71f5d72b395044666f14981bfe467bf9591
+  # usr/lib64/libk5crypto.so.3.1
+  - 4828d3f6b1b67a63cceb698d1ba773b71f52815b
+- component: libssh
+  version: 0.9.8-150600.9.1
+  sha1s:
+  # usr/lib64/libssh.so.4.8.9
+  - 5958c6aaaf45ac538ebea0b1c7660feebcf5c5fa
+  # etc/libssh/libssh_client.config
+  - 277df24cb692e2adc140724dd88285546d95b064
+- component: libtasn1
+  version: 4.13-150000.4.11.1
+  sha1s:
+  # usr/lib64/libtasn1.so.6.5.5
+  - 26df2d5a96e473592f8fad9b4bc766b6c7cdf5e8
+  # usr/bin/asn1Coding
+  - 98969db978e11e62e6ec01488e2b18d20004c8e3
+- component: libxml2
+  version: 2.10.3-150500.5.23.1
+  sha1s:
+  # usr/lib64/libxml2.so.2.10.3
+  - 68ef57b1056d12dbffff5d0cc3c892f5f579dae2
+- component: linux-pam
+  version: 1.3.0-150000.6.71.2
+  sha1s:
+  # lib64/libpam.so.0.84.2
+  - 6082d4500e92b0362e8f95fa628df793f75c1e95
+- component: lua
+  version: 5.3.6-3.6.1
+  sha1s:
+  # usr/lib64/liblua5.3.so.5.3.0
+  - 86c3aa2e5150750485de6ea1cab5723b49074945
+- component: ncurses
+  version: 6.1-150000.5.27.1
+  sha1s:
+  # lib64/libncurses.so.6.1
+  - b3ae6028616c7a6b2f1fb08ab8fb1e65c9f6003a
+  # lib64/libncursesw.so.6.1
+  - 7b349a62e9d5e24d3bdd6beb7e833bb8c839985c
+  # lib64/libtinfo.so.6.1
+  - 2369269340e521a0e515d8ef5f91c4297d2dd1c7
+  # usr/share/misc/termcap
+  - e1d64bff12778759d48618c7098b89ea91cd1992
+  # usr/bin/clear
+  - 7588915a1a10138afc690605faa1e81d8dc7f891
+- component: nghttp2
+  version: 1.40.0-150600.23.2
+  sha1s:
+  # usr/lib64/libnghttp2.so.14.19.0
+  - 24d59a1b61adade415f4ef58faf0e867dd14085d
+- component: openldap
+  version: 2.4.46-150600.23.21
+  sha1s:
+  # usr/lib64/libldap_r-2.4.so.2.10.9
+  - fa0c6eea39d25b764ec9898205b398fca37aaaeb
+- component: openldap2
+  version: 2.4.46-150600.23.21
+  sha1s:
+  # etc/openldap/ldap.conf
+  - 3eb2bcb502d2cbe32fae424d442ceb78ac7a9372
+- component: openssl
+  version: 1.1.1l-150500.17.37.1
+  sha1s:
+  # usr/lib64/libcrypto.so.1.1
+  - 80e959a51bd18e94d62b72f18e56338a3886d4e6
+  # usr/lib64/libssl.so.1.1
+  - 9085124c726dc619af58640324c678bc1a630874
+- component: openssl
+  version: 3.1.4-150600.5.24.1
+  sha1s:
+  # usr/lib64/libcrypto.so.3.1.4
+  - 152ea0a7096da35bd0b8436095086d2a4b0f5691
+  # usr/lib64/libssl.so.3.1.4
+  - f329fd66b65daf382b9b17c7e11a1dbba5d82dc1
+  # usr/lib64/ossl-modules/fips.so
+  - dd181defe6be98427adf97a6408a32cfec15ee4c
+  # usr/bin/c_rehash
+  - 454404cb1b8788f2990e4b231dbc2cb9fcd42bdd
+- component: perl
+  version: 5.26.1-150300.17.17.1
+  sha1s:
+  # usr/bin/perl
+  - 5bc4361c2943b9aa1b4eba926feff07f27c9d66c
+  # usr/lib/perl5/5.26.1/x86_64-linux-thread-multi/CORE/libperl.so
+  - 1761e5c798d78025b5ff6c35c020c6409e98f82f
+- component: rpm
+  version: 4.14.3-150400.59.16.1
+  sha1s:
+  # usr/lib64/librpm.so.8.2.0
+  - f4da5b90a7dad9596c3cf9ab9512b0e32066cbe7
+- component: selinux
+  version: 3.5-150600.1.46
+  sha1s:
+  # usr/lib64/libselinux.so.1
+  - 29010e0935c951fdc5ea90807701756b24d7fd04
+- component: setuptools
+  version: 68.1.2-150600.3.3.1
+  sha1s:
+  # usr/lib/python3.12/site-packages/setuptools/__init__.py
+  - 53decd5616c0b4dd2cc7afad0facee6511e149d5
+- component: systemd
+  version: 254.23-150600.4.25.1
+  sha1s:
+  # usr/lib64/libudev.so.1.7.7
+  - ce09d813fa5bacd2a16588ea62a4f8f5133b746a
+- component: unzip
+  version: 6.00-150000.4.14.1
+  sha1s:
+  # usr/bin/unzip-plain
+  - 4311ab245845d24a8bfb1e2f2ade73c73909297a
+- component: xz
+  version: 5.4.1-150600.1.2
+  sha1s:
+  # usr/lib64/liblzma.so.5.4.1
+  - f5e0cfa7886fd6c3454c0dd2bfda90265e26ab92
+- component: zchunk
+  version: 1.1.16-150600.9.3
+  sha1s:
+  # usr/lib64/libzck.so.1.1.16
+  - 1bb527483a31a4e3656c9a64521fb0f79b3c69e6
